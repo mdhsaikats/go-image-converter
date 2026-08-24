@@ -4,7 +4,16 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/mdhsaikats/go-image-converter)](https://goreportcard.com/report/github.com/mdhsaikats/go-image-converter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-`imgconv` is a lightweight, zero-dependency Go package designed for fast and simple PNG to JPEG image conversion with configurable compression quality.
+`imgconv` is a lightweight, zero-dependency Go package for fast image format conversion between PNG and JPEG formats.
+
+---
+
+## Features
+
+- **PNG to JPEG Conversion**: Convert PNG images to JPEG format with customizable quality compression settings (1-100).
+- **JPEG to PNG Conversion**: Convert JPEG images to lossless PNG format cleanly and efficiently.
+- **Zero External Dependencies**: Uses Go standard library packages (`image/jpeg`, `image/png`).
+- **Idiomatic Error Handling**: Returns clear, wrapped errors for file access and image decoding/encoding operations.
 
 ---
 
@@ -20,9 +29,7 @@ go get github.com/mdhsaikats/go-image-converter
 
 ## User Guide & Quick Start
 
-### Basic Conversion
-
-To convert a PNG image to JPEG format, import `github.com/mdhsaikats/go-image-converter` (or alias it as `imgconv`) and call `PngToJpeg`:
+### 1. Converting PNG to JPEG (`PngToJpeg`)
 
 ```go
 package main
@@ -41,10 +48,35 @@ func main() {
 
 	err := imgconv.PngToJpeg(inputPath, outputPath, quality)
 	if err != nil {
-		log.Fatalf("Failed to convert image: %v", err)
+		log.Fatalf("Failed to convert PNG to JPEG: %v", err)
 	}
 
-	fmt.Println("Image converted successfully!")
+	fmt.Println("PNG converted to JPEG successfully!")
+}
+```
+
+### 2. Converting JPEG to PNG (`JpegToPng`)
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	imgconv "github.com/mdhsaikats/go-image-converter"
+)
+
+func main() {
+	inputPath := "sample.jpg"
+	outputPath := "output.png"
+
+	err := imgconv.JpegToPng(inputPath, outputPath)
+	if err != nil {
+		log.Fatalf("Failed to convert JPEG to PNG: %v", err)
+	}
+
+	fmt.Println("JPEG converted to PNG successfully!")
 }
 ```
 
@@ -58,29 +90,31 @@ Converts a PNG image located at `inputPath` to a JPEG file saved at `outputPath`
 
 #### Parameters
 
-- **`inputPath`** `(string)`: The filesystem path to the source PNG file.
-- **`outputPath`** `(string)`: The destination path where the generated JPEG file will be saved.
-- **`quality`** `(int)`: Compression quality setting for the output JPEG file, ranging from `1` to `100`.
-  - **`1 - 30`**: High compression, smaller file size, reduced visual quality.
-  - **`75 - 85`**: Recommended balance between file size and visual fidelity.
+- **`inputPath`** `(string)`: Path to the source PNG file.
+- **`outputPath`** `(string)`: Destination path for the generated JPEG file.
+- **`quality`** `(int)`: Compression quality setting for the output JPEG file (`1` to `100`).
+  - **`1 - 30`**: High compression, smaller file size, lower visual quality.
+  - **`75 - 85`**: Recommended balance between file size and image clarity.
   - **`90 - 100`**: Maximum visual quality, larger file size.
 
 #### Return Value
 
-- Returns `nil` on success.
-- Returns a descriptive `error` if opening the input file, decoding PNG data, creating the output file, or encoding JPEG data fails.
+- Returns `nil` on success, or a descriptive `error` if any stage of file reading, decoding, or encoding fails.
 
 ---
 
-## Error Handling
+### `func JpegToPng(inputPath, outputPath string) error`
 
-`PngToJpeg` returns wrapped errors providing context on what failed during execution. It is good practice to handle errors explicitly:
+Converts a JPEG image located at `inputPath` to a PNG file saved at `outputPath`.
 
-```go
-if err := imgconv.PngToJpeg("input.png", "output.jpg", 80); err != nil {
-	log.Printf("Conversion error: %v", err)
-}
-```
+#### Parameters
+
+- **`inputPath`** `(string)`: Path to the source JPEG file.
+- **`outputPath`** `(string)`: Destination path for the generated PNG file.
+
+#### Return Value
+
+- Returns `nil` on success, or a descriptive `error` if any stage of file reading, decoding, or encoding fails.
 
 ---
 

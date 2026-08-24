@@ -31,3 +31,28 @@ func PngToJpeg(inputPath, outputPath string, quality int) error {
 	}
 	return nil
 }
+
+func JpegToPng(inputPath, outputPath string) error {
+	inFile, err := os.Open(inputPath)
+	if err != nil {
+		return fmt.Errorf("failed to open the input file: %w", err)
+	}
+	defer inFile.Close()
+
+	img, err := jpeg.Decode(inFile)
+	if err != nil {
+		return fmt.Errorf("failed to decode JPEG: %w", err)
+	}
+
+	outFile, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("failed to create the output file: %w", err)
+	}
+	defer outFile.Close()
+
+	if err := png.Encode(outFile, img); err != nil {
+		return fmt.Errorf("failed to encode PNG: %w", err)
+	}
+
+	return nil
+}
