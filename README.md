@@ -1,184 +1,89 @@
 # imgconv
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/user/imgconv.svg)](https://pkg.go.dev/github.com/user/imgconv)
-[![Go Report Card](https://goreportcard.com/badge/github.com/user/imgconv)](https://goreportcard.com/report/github.com/user/imgconv)
+[![Go Reference](https://pkg.go.dev/badge/github.com/mdhsaikats/go-image-converter.svg)](https://pkg.go.dev/github.com/mdhsaikats/go-image-converter)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mdhsaikats/go-image-converter)](https://goreportcard.com/report/github.com/mdhsaikats/go-image-converter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-`imgconv` is a high-performance, idiomatic Go library for image format conversion and processing. Built with clean abstraction around `io.Reader` and `io.Writer` streams, it provides efficient format auto-detection, customizable encoding options, and zero unnecessary memory allocations.
-
----
-
-## Features
-
-- **Multi-Format Support**: Seamless encoding and decoding across JPEG, PNG, WebP, GIF, BMP, and TIFF formats.
-- **Stream-Based Architecture**: Process images directly from `io.Reader` sources to `io.Writer` destinations without holding entire payloads in memory unnecessarily.
-- **Automatic Format Detection**: Automatically inspects image header signatures to decode incoming streams without requiring prior file extension hints.
-- **Flexible Encoding Options**: Granular control over quality, compression levels, color models, and encoding profiles.
-- **Concurrency Safe**: Pure stateless converter design safe for high-throughput concurrent workloads.
+`imgconv` is a lightweight, zero-dependency Go package designed for fast and simple PNG to JPEG image conversion with configurable compression quality.
 
 ---
 
 ## Installation
 
-Requires Go 1.18 or higher.
+Install the package using standard `go get`:
 
 ```bash
-go get github.com/user/imgconv
+go get github.com/mdhsaikats/go-image-converter
 ```
 
 ---
 
-## Quick Start
+## User Guide & Quick Start
+
+### Basic Conversion
+
+To convert a PNG image to JPEG format, import `github.com/mdhsaikats/go-image-converter` (or alias it as `imgconv`) and call `PngToJpeg`:
 
 ```go
 package main
 
 import (
+	"fmt"
 	"log"
-	"os"
 
-	"github.com/user/imgconv"
+	imgconv "github.com/mdhsaikats/go-image-converter"
 )
 
 func main() {
-	// Open source image file
-	src, err := os.Open("input.jpg")
+	inputPath := "sample.png"
+	outputPath := "output.jpg"
+	quality := 85 // Quality scale: 1 (lowest quality, highest compression) to 100 (highest quality)
+
+	err := imgconv.PngToJpeg(inputPath, outputPath, quality)
 	if err != nil {
-		log.Fatalf("failed to open source image: %v", err)
-	}
-	defer src.Close()
-
-	// Create output destination file
-	dst, err := os.Create("output.webp")
-	if err != nil {
-		log.Fatalf("failed to create destination image: %v", err)
-	}
-	defer dst.Close()
-
-	// Convert JPEG stream to WebP format
-	opts := &imgconv.Options{
-		Format:  imgconv.FormatWebP,
-		Quality: 85,
+		log.Fatalf("Failed to convert image: %v", err)
 	}
 
-	if err := imgconv.Convert(dst, src, opts); err != nil {
-		log.Fatalf("conversion failed: %v", err)
-	}
-
-	log.Println("Image converted successfully")
+	fmt.Println("Image converted successfully!")
 }
 ```
-
----
-
-## Usage Guide
-
-### 1. Converting Files by Path
-
-For convenience when working with filesystem paths, `ConvertFile` handles file operations under the hood:
-
-```go
-opts := &imgconv.Options{
-	Format:  imgconv.FormatPNG,
-	Quality: 100,
-}
-
-err := imgconv.ConvertFile("output.png", "input.jpg", opts)
-if err != nil {
-	log.Printf("Error converting file: %v", err)
-}
-```
-
-### 2. Stream Processing (`io.Reader` / `io.Writer`)
-
-Process incoming HTTP request bodies or S3 object streams directly without intermediate disk storage:
-
-```go
-func handleUpload(w http.ResponseWriter, r *http.Request) {
-	file, _, err := r.FormFile("image")
-	if err != nil {
-		http.Error(w, "invalid image upload", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
-
-	w.Header().Set("Content-Type", "image/jpeg")
-
-	opts := &imgconv.Options{
-		Format:  imgconv.FormatJPEG,
-		Quality: 80,
-	}
-
-	if err := imgconv.Convert(w, file, opts); err != nil {
-		http.Error(w, "failed to process image", http.StatusInternalServerError)
-		return
-	}
-}
-```
-
-### 3. Encoding Options
-
-The `Options` struct allows tuning output parameters per format:
-
-```go
-type Options struct {
-	// Target format (e.g., FormatJPEG, FormatPNG, FormatWebP, FormatGIF)
-	Format Format
-
-	// Quality setting for lossy formats (1-100). Default is 80.
-	Quality int
-
-	// Compression level for formats like PNG (e.g., DefaultCompression, BestSpeed, BestCompression).
-	Compression CompressionLevel
-}
-```
-
----
-
-## Supported Formats
-
-| Format | Decoding | Encoding | Options Supported |
-| :--- | :---: | :---: | :--- |
-| **JPEG** | Yes | Yes | Quality (1-100) |
-| **PNG** | Yes | Yes | Compression Level |
-| **WebP** | Yes | Yes | Quality (1-100) |
-| **GIF** | Yes | Yes | NumColors, Quantizer |
-| **BMP** | Yes | Yes | Standard |
-| **TIFF** | Yes | Yes | Compression Type |
 
 ---
 
 ## API Reference
 
-Comprehensive package documentation and function signatures are available on [pkg.go.dev](https://pkg.go.dev/github.com/user/imgconv).
+### `func PngToJpeg(inputPath, outputPath string, quality int) error`
 
-### Core Functions
+Converts a PNG image located at `inputPath` to a JPEG file saved at `outputPath`.
 
-- `Convert(dst io.Writer, src io.Reader, opts *Options) error`  
-  Decodes from `src`, applies target format conversion according to `opts`, and writes to `dst`.
+#### Parameters
 
-- `ConvertFile(dstPath string, srcPath string, opts *Options) error`  
-  Convenience wrapper for converting files on disk.
+- **`inputPath`** `(string)`: The filesystem path to the source PNG file.
+- **`outputPath`** `(string)`: The destination path where the generated JPEG file will be saved.
+- **`quality`** `(int)`: Compression quality setting for the output JPEG file, ranging from `1` to `100`.
+  - **`1 - 30`**: High compression, smaller file size, reduced visual quality.
+  - **`75 - 85`**: Recommended balance between file size and visual fidelity.
+  - **`90 - 100`**: Maximum visual quality, larger file size.
 
-- `Decode(r io.Reader) (image.Image, Format, error)`  
-  Auto-detects format from stream header and decodes into a standard `image.Image`.
+#### Return Value
 
-- `Encode(w io.Writer, img image.Image, opts *Options) error`  
-  Encodes standard `image.Image` to specified target format.
+- Returns `nil` on success.
+- Returns a descriptive `error` if opening the input file, decoding PNG data, creating the output file, or encoding JPEG data fails.
 
 ---
 
-## Benchmark & Performance
+## Error Handling
 
-`imgconv` aims for minimal memory overhead by operating directly over buffered `io.Reader`/`io.Writer` streams.
+`PngToJpeg` returns wrapped errors providing context on what failed during execution. It is good practice to handle errors explicitly:
 
-```
-BenchmarkConvertJPEGToPNG-12     500    2.34 ms/op    1.2 MB/op    42 allocs/op
-BenchmarkConvertPNGToWebP-12     300    3.81 ms/op    0.8 MB/op    28 allocs/op
+```go
+if err := imgconv.PngToJpeg("input.png", "output.jpg", 80); err != nil {
+	log.Printf("Conversion error: %v", err)
+}
 ```
 
 ---
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+This project is licensed under the MIT License.
