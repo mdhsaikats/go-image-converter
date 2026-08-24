@@ -15,7 +15,7 @@ func PngToJpeg(inputPath, outputPath string, quality int) error {
 	defer inFile.Close()
 	img, err := png.Decode(inFile)
 	if err != nil {
-		fmt.Errorf("failed to decode PNG: %w",err)
+		return fmt.Errorf("failed to decode PNG: %w", err)
 	}
 
 	outFile, err := os.Create(outputPath)
