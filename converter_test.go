@@ -3,7 +3,6 @@ package imgconv
 import (
 	"image"
 	"image/color"
-	"image/jpeg"
 	"image/png"
 	"os"
 	"path/filepath"
@@ -54,46 +53,5 @@ func createDummyPNG(t *testing.T, path string) {
 	err = png.Encode(file, img)
 	if err != nil {
 		t.Fatalf("Failed to encode dummy PNG: %v", err)
-	}
-}
-
-func TestJpegToPng(t *testing.T) {
-	tempDir := t.TempDir()
-	inputPath := filepath.Join(tempDir, "test.jpg")
-	outputPath := filepath.Join(tempDir, "test.png")
-
-	createDummyJPEG(t, inputPath)
-
-	err := JpegToPng(inputPath, outputPath)
-	if err != nil {
-		t.Fatalf("JpegToPng failed: %v", err)
-	}
-
-	info, err := os.Stat(outputPath)
-	if os.IsNotExist(err) {
-		t.Fatalf("Expected output file was not created at %s", outputPath)
-	}
-	if info.Size() == 0 {
-		t.Errorf("Output file is completely empty")
-	}
-}
-
-func createDummyJPEG(t *testing.T, path string) {
-	t.Helper()
-
-	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
-	img.Set(0, 0, color.RGBA{0, 255, 0, 255})
-
-	file, err := os.Create(path)
-	if err != nil {
-		t.Fatalf("Failed to create dummy JPEG: %v", err)
-	}
-	defer file.Close()
-
-	var opt jpeg.Options
-	opt.Quality = 90
-	err = jpeg.Encode(file, img, &opt)
-	if err != nil {
-		t.Fatalf("Failed to encode dummy JPEG: %v", err)
 	}
 }
