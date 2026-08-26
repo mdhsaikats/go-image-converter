@@ -7,14 +7,17 @@ import (
 	"image/jpeg"
 	"image/png"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 func PngToJpeg(inputPath, outputPath string, quality int) error {
 	inFile, err := os.Open(inputPath)
 	if err != nil {
-		return fmt.Errorf("failed to open input file: %w",err)
+		return fmt.Errorf("failed to open input file: %w", err)
 	}
 	defer inFile.Close()
+
 	img, err := png.Decode(inFile)
 	if err != nil {
 		return fmt.Errorf("failed to decode PNG: %w", err)
@@ -22,15 +25,70 @@ func PngToJpeg(inputPath, outputPath string, quality int) error {
 
 	outFile, err := os.Create(outputPath)
 	if err != nil {
-		return fmt.Errorf("failed to create the output file: %w",err)
+		return fmt.Errorf("failed to create the output file: %w", err)
 	}
 	defer outFile.Close()
 
-	option := &jpeg.Options{Quality: quality}
-	err = jpeg.Encode(outFile,img,option)
-	if err != nil {
-		return fmt.Errorf("failed to encode JPEG: %w",err)
+	option := &jpeg.Options{
+		Quality: quality,
 	}
+
+	if err := jpeg.Encode(outFile, img, option); err != nil {
+		return fmt.Errorf("failed to encode JPEG: %w", err)
+	}
+
+	return nil
+}
+
+func ConvertFolderFromPngToJpeg(
+	inputFolder string,
+	outputFolder string,
+	quality int,
+) error {
+	entries, err := os.ReadDir(inputFolder)
+	if err != nil {
+		return fmt.Errorf("failed to read input folder: %w", err)
+	}
+
+	if err := os.MkdirAll(outputFolder, 0755); err != nil {
+		return fmt.Errorf("failed to create output folder: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		if strings.ToLower(filepath.Ext(entry.Name())) != ".png" {
+			continue
+		}
+
+		inputPath := filepath.Join(inputFolder, entry.Name())
+
+		baseName := strings.TrimSuffix(
+			entry.Name(),
+			filepath.Ext(entry.Name()),
+		)
+
+		outputPath := filepath.Join(
+			outputFolder,
+			baseName+".jpg",
+		)
+
+		fmt.Printf("Converting %s → %s\n",
+			inputPath,
+			outputPath,
+		)
+
+		if err := PngToJpeg(inputPath, outputPath, quality); err != nil {
+			return fmt.Errorf(
+				"failed to convert %s: %w",
+				entry.Name(),
+				err,
+			)
+		}
+	}
+
 	return nil
 }
 
@@ -59,6 +117,54 @@ func JpegToPng(inputPath, outputPath string) error {
 	return nil
 }
 
+func ConvertFolderFromJpegToPng(inputFolder, outputFolder string) error {
+	entries, err := os.ReadDir(inputFolder)
+	if err != nil {
+		return fmt.Errorf("failed to read input folder: %w", err)
+	}
+
+	if err := os.MkdirAll(outputFolder, 0755); err != nil {
+		return fmt.Errorf("failed to create output folder: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		ext := strings.ToLower(filepath.Ext(entry.Name()))
+
+		if ext != ".jpg" && ext != ".jpeg" {
+			continue
+		}
+
+		inputPath := filepath.Join(inputFolder, entry.Name())
+
+		baseName := strings.TrimSuffix(
+			entry.Name(),
+			filepath.Ext(entry.Name()),
+		)
+
+		outputName := baseName + ".png"
+		outputPath := filepath.Join(outputFolder, outputName)
+
+		fmt.Printf("Converting %s → %s\n",
+			entry.Name(),
+			outputName,
+		)
+
+		if err := JpegToPng(inputPath, outputPath); err != nil {
+			return fmt.Errorf(
+				"failed to convert %s: %w",
+				entry.Name(),
+				err,
+			)
+		}
+	}
+
+	return nil
+}
+
 func RemoveBackground(inputPath, outputPath string, tolerance uint8) error {
 	inFile, err := os.Open(inputPath)
 	if err != nil {
@@ -72,7 +178,7 @@ func RemoveBackground(inputPath, outputPath string, tolerance uint8) error {
 	}
 
 	bounds := src.Bounds()
-	
+
 	bg := color.RGBAModel.Convert(
 		src.At(bounds.Min.X, bounds.Min.Y),
 	).(color.RGBA)

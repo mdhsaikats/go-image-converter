@@ -4,16 +4,17 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/mdhsaikats/go-image-converter)](https://goreportcard.com/report/github.com/mdhsaikats/go-image-converter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-`imgconv` is a lightweight, zero-dependency Go package for image format conversion (PNG <-> JPEG) and simple background removal.
+`imgconv` is a lightweight, zero-dependency Go package for image format conversion (PNG <-> JPEG), bulk folder batch processing, and tolerance-based background removal.
 
 ---
 
 ## Features
 
-- **PNG to JPEG Conversion**: Convert PNG images to JPEG with configurable quality compression (1-100).
-- **JPEG to PNG Conversion**: Convert JPEG images to lossless PNG format.
-- **Background Removal**: Automatically detect top-left background color signatures and make matching background pixels transparent in PNG outputs with customizable color tolerance.
-- **Zero External Dependencies**: Pure Go standard library implementation (`image/jpeg`, `image/png`, `image/color`).
+- **Single Image Conversion**: Fast conversion between PNG and JPEG formats.
+- **Bulk Folder Conversion**: Batch process entire directories of images (`PNG → JPEG` and `JPEG → PNG`) with automatic directory creation and non-image file filtering.
+- **Background Removal**: Automatically sample top-left background color signatures and convert matching background pixels into transparent alpha.
+- **Configurable Quality**: Custom JPEG compression quality scale (1-100).
+- **Zero External Dependencies**: Implemented entirely with Go standard library packages (`image/jpeg`, `image/png`, `image/color`, `os`).
 
 ---
 
@@ -29,9 +30,114 @@ go get github.com/mdhsaikats/go-image-converter
 
 ## User Guide & Quick Start
 
-### 1. Removing Image Background (`RemoveBackground`)
+### 1. Bulk Folder Conversions
 
-Detects the background color starting from the top-left corner `(0,0)` and converts all matching pixels within the specified color tolerance to transparent alpha.
+#### Bulk PNG to JPEG (`ConvertFolderFromPngToJpeg`)
+
+Batch converts all `.png` files inside `inputFolder` and outputs `.jpg` files into `outputFolder`:
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	imgconv "github.com/mdhsaikats/go-image-converter"
+)
+
+func main() {
+	inputFolder := "./images/png_folder"
+	outputFolder := "./images/jpeg_output"
+	quality := 85 // JPEG compression quality (1-100)
+
+	err := imgconv.ConvertFolderFromPngToJpeg(inputFolder, outputFolder, quality)
+	if err != nil {
+		log.Fatalf("Bulk PNG to JPEG conversion failed: %v", err)
+	}
+
+	fmt.Println("Bulk PNG to JPEG conversion completed successfully!")
+}
+```
+
+#### Bulk JPEG to PNG (`ConvertFolderFromJpegToPng`)
+
+Batch converts all `.jpg` and `.jpeg` files inside `inputFolder` and outputs `.png` files into `outputFolder`:
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	imgconv "github.com/mdhsaikats/go-image-converter"
+)
+
+func main() {
+	inputFolder := "./images/jpeg_folder"
+	outputFolder := "./images/png_output"
+
+	err := imgconv.ConvertFolderFromJpegToPng(inputFolder, outputFolder)
+	if err != nil {
+		log.Fatalf("Bulk JPEG to PNG conversion failed: %v", err)
+	}
+
+	fmt.Println("Bulk JPEG to PNG conversion completed successfully!")
+}
+```
+
+---
+
+### 2. Single Image Conversions
+
+#### PNG to JPEG (`PngToJpeg`)
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	imgconv "github.com/mdhsaikats/go-image-converter"
+)
+
+func main() {
+	err := imgconv.PngToJpeg("input.png", "output.jpg", 90)
+	if err != nil {
+		log.Fatalf("Conversion failed: %v", err)
+	}
+
+	fmt.Println("Converted single PNG to JPEG!")
+}
+```
+
+#### JPEG to PNG (`JpegToPng`)
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	imgconv "github.com/mdhsaikats/go-image-converter"
+)
+
+func main() {
+	err := imgconv.JpegToPng("input.jpg", "output.png")
+	if err != nil {
+		log.Fatalf("Conversion failed: %v", err)
+	}
+
+	fmt.Println("Converted single JPEG to PNG!")
+}
+```
+
+---
+
+### 3. Background Removal (`RemoveBackground`)
 
 ```go
 package main
@@ -46,65 +152,14 @@ import (
 func main() {
 	inputPath := "photo.png"
 	outputPath := "photo_transparent.png"
-	tolerance := uint8(15) // Color difference threshold (0 = exact match, higher values match broader color variations)
+	tolerance := uint8(15) // Color difference threshold (0 to 255)
 
 	err := imgconv.RemoveBackground(inputPath, outputPath, tolerance)
 	if err != nil {
-		log.Fatalf("Failed to remove background: %v", err)
+		log.Fatalf("Background removal failed: %v", err)
 	}
 
 	fmt.Println("Background removed successfully!")
-}
-```
-
-### 2. Converting PNG to JPEG (`PngToJpeg`)
-
-```go
-package main
-
-import (
-	"fmt"
-	"log"
-
-	imgconv "github.com/mdhsaikats/go-image-converter"
-)
-
-func main() {
-	inputPath := "sample.png"
-	outputPath := "output.jpg"
-	quality := 85 // Quality scale: 1 (lowest quality, highest compression) to 100 (highest quality)
-
-	err := imgconv.PngToJpeg(inputPath, outputPath, quality)
-	if err != nil {
-		log.Fatalf("Failed to convert PNG to JPEG: %v", err)
-	}
-
-	fmt.Println("PNG converted to JPEG successfully!")
-}
-```
-
-### 3. Converting JPEG to PNG (`JpegToPng`)
-
-```go
-package main
-
-import (
-	"fmt"
-	"log"
-
-	imgconv "github.com/mdhsaikats/go-image-converter"
-)
-
-func main() {
-	inputPath := "sample.jpg"
-	outputPath := "output.png"
-
-	err := imgconv.JpegToPng(inputPath, outputPath)
-	if err != nil {
-		log.Fatalf("Failed to convert JPEG to PNG: %v", err)
-	}
-
-	fmt.Println("JPEG converted to PNG successfully!")
 }
 ```
 
@@ -112,52 +167,26 @@ func main() {
 
 ## API Reference
 
-### `func RemoveBackground(inputPath, outputPath string, tolerance uint8) error`
+### Bulk Functions
 
-Inspects the source image at `inputPath`, samples the top-left pixel `(0,0)` as the reference background color, converts all pixels within the RGB `tolerance` threshold to transparent alpha `RGBA(0, 0, 0, 0)`, and saves the resulting image to `outputPath` as a PNG.
+#### `func ConvertFolderFromPngToJpeg(inputFolder, outputFolder string, quality int) error`
+Reads all `.png` files in `inputFolder`, converts them to JPEG format using the specified `quality` setting, and saves them to `outputFolder`. Non-PNG files and subdirectories are automatically skipped. The output directory is created automatically if it does not exist.
 
-#### Parameters
-
-- **`inputPath`** `(string)`: Path to the input image file (PNG or JPEG).
-- **`outputPath`** `(string)`: Destination path for the output PNG file (must support alpha transparency).
-- **`tolerance`** `(uint8)`: Maximum allowed difference per RGB channel (0 to 255) when comparing pixels against the sampled background color.
-  - **`0`**: Only pixels matching the exact background color are made transparent.
-  - **`10 - 30`**: Recommended for solid backgrounds with slight compression artifacts or lighting variations.
-
-#### Return Value
-
-- Returns `nil` on success, or a descriptive `error` if image reading, decoding, or PNG encoding fails.
+#### `func ConvertFolderFromJpegToPng(inputFolder, outputFolder string) error`
+Reads all `.jpg` and `.jpeg` files in `inputFolder`, converts them to PNG format, and saves them to `outputFolder`. Non-JPEG files and subdirectories are automatically skipped. The output directory is created automatically if it does not exist.
 
 ---
 
-### `func PngToJpeg(inputPath, outputPath string, quality int) error`
+### Single File Functions
 
-Converts a PNG image located at `inputPath` to a JPEG file saved at `outputPath`.
+#### `func PngToJpeg(inputPath, outputPath string, quality int) error`
+Converts a single PNG file at `inputPath` to a JPEG file at `outputPath` with quality scale `1` (lowest) to `100` (highest).
 
-#### Parameters
+#### `func JpegToPng(inputPath, outputPath string) error`
+Converts a single JPEG file at `inputPath` to a PNG file at `outputPath`.
 
-- **`inputPath`** `(string)`: Path to the source PNG file.
-- **`outputPath`** `(string)`: Destination path for the generated JPEG file.
-- **`quality`** `(int)`: Compression quality setting for the output JPEG file (`1` to `100`).
-
-#### Return Value
-
-- Returns `nil` on success, or a descriptive `error` if any stage fails.
-
----
-
-### `func JpegToPng(inputPath, outputPath string) error`
-
-Converts a JPEG image located at `inputPath` to a PNG file saved at `outputPath`.
-
-#### Parameters
-
-- **`inputPath`** `(string)`: Path to the source JPEG file.
-- **`outputPath`** `(string)`: Destination path for the generated PNG file.
-
-#### Return Value
-
-- Returns `nil` on success, or a descriptive `error` if any stage fails.
+#### `func RemoveBackground(inputPath, outputPath string, tolerance uint8) error`
+Samples the top-left pixel `(0,0)` of the input image as the background color reference and turns all pixels matching within `tolerance` into transparent alpha in the output PNG file.
 
 ---
 
